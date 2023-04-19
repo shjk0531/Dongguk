@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class OnMouseClick_Enemy : MonoBehaviour
+public class OnMouseClick_Enemy2 : MonoBehaviour
 {
     System.Random rand = new System.Random();
     float count = 0;
@@ -14,24 +14,10 @@ public class OnMouseClick_Enemy : MonoBehaviour
     
     int delay = 0;
 
-    public string showObjectName = "";
-    public string hideObjectName = "";
-
-    GameObject showObject;
-    public GameObject hideObject;
 
     // Start is called before the first frame update
     void Start()
     {
-        showObject = GameObject.Find(showObjectName);
-        showObject.SetActive(false);
-
-        print("hide showObject");
-
-        
-
-        hideObject = GameObject.Find(hideObjectName);
-        hideObject.SetActive(true);
 
         count = 0;
         delay = rand.Next(maxDelay * 10);
@@ -64,8 +50,6 @@ public class OnMouseClick_Enemy : MonoBehaviour
 
     private void OnMouseDown()
     {
-        showObject.SetActive(true);
-        hideObject.SetActive(false);
         this.gameObject.SetActive(false);
     }
 }
