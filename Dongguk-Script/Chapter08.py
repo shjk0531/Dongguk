@@ -92,8 +92,8 @@ turtle.penup()
 inStr = askstring("enter string", "Enter a string for the turtle to write to")
 
 for ch in inStr:
-    tX = random.randrange(-swidth/2, swidth/2)
-    tY = random.randrange(-sheight/2, sheight/2)
+    tX = random.randrange(int(-swidth/2), int(swidth/2))
+    tY = random.randrange(int(-sheight/2), int(sheight/2))
     r = random.random()
     g = random.random()
     b = random.random()
