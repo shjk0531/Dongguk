@@ -22,7 +22,7 @@ public class MoveControl : MonoBehaviour
 
     Rigidbody2D r2d;
     
-
+    Player player;
     private void Start()
     {
         r2d = GetComponent<Rigidbody2D>();

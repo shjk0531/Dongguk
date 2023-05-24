@@ -11,10 +11,9 @@ GameObject:
   - component: {fileID: 1526611598172078582}
   - component: {fileID: 6601705607100030268}
   - component: {fileID: 6866256724123366514}
-  - component: {fileID: 2767789243884769131}
   - component: {fileID: 4715495213728187447}
-  - component: {fileID: 3950673130372633272}
-  - component: {fileID: 7794329637598094045}
+  - component: {fileID: 9112345307996199901}
+  - component: {fileID: -4378354129757771975}
   m_Layer: 0
   m_Name: uni_0
   m_TagString: Untagged
@@ -110,19 +109,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &2767789243884769131
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5918096768567293986}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7899f945aca398a4eb8c9bcedc48392a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 4
 --- !u!58 &4715495213728187447
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -139,28 +125,22 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.64
---- !u!50 &3950673130372633272
-Rigidbody2D:
-  serializedVersion: 4
+--- !u!114 &9112345307996199901
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5918096768567293986}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 0}
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
---- !u!114 &7794329637598094045
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8b1afef51041f04aa2f5c36830b23e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  thisType: enemy
+  score: 1
+  atk: 1
+--- !u!114 &-4378354129757771975
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -172,4 +152,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3492a62bf815cc479c1064c93e07e71, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameoverScene: GameOver
+  score: 0
