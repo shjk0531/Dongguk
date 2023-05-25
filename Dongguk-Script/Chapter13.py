@@ -1,94 +1,58 @@
 import sqlite3
+import os
+import traceback
 from tkinter import *
 from tkinter import messagebox
-
-# con = sqlite3.connect(
-#     "/home/shin/Development/University/Dongguk/Dongguk-Script/DB/naverDB")
-
-# cur = con.cursor()
-
-# cur.execute(
-#     "CREATE TABLE userTable (id char(4), userName char(15), email char(20), birthYear int)")
-
-# cur.execute(
-#     "INSERT INTO userTable VALUES('john', 'John Bann', 'john@naver.com', 1990)")
-# cur.execute(
-#     "INSERT INTO userTable VALUES('kim', 'Kim Chi', 'kim@daum.net', 1992)")
-# cur.execute(
-#     "INSERT INTO userTable VALUES('lee', 'Lee Pal', 'lee@paran.com', 1988)")
-# cur.execute(
-#     "INSERT INTO userTable VALUES('park', 'Park Su', 'park@gmail.com', 1980)")
-
-
-# con.commit()
-# con.close()
-
-
-# con, cur = None, None
-# data1, data2, data3, data4 = "", "", "", ""
-# sql = ""
-# row = None
-
-# con = sqlite3.connect(
-#     "/home/shin/Development/University/Dongguk/Dongguk-Script/DB/naverDB")
-# cur = con.cursor()
-
-# # while (True):
-# #     data1 = input("사용자 ID ==> ")
-# #     if data1 == "":
-# #         break
-# #     data2 = input("사용자 이름 ==> ")
-# #     data3 = input("이메일 ==> ")
-# #     data4 = input("출생연도 ==> ")
-# #     sql = "INSERT INTO userTable VALUES ('" + data1 + "','" + \
-# #         data2 + "','" + data3 + "'," + data4 + ")"
-# #     cur.execute(sql)
-
-
-# cur.execute("SELECT * FROM userTable")
-# while True:
-#     row = cur.fetchone()
-#     if row == None:
-#         break
-#     data1 = row[0]
-#     data2 = row[1]
-#     data3 = row[2]
-#     data4 = row[3]
-#     print("%5s %15s %20s %10d" % (data1, data2, data3, data4))
-
-# con.commit()
-# con.close()
-
 
 def insertData():
     con, cur = None, None
     data1, data2, data3, data4 = "", "", "", ""
     sql = ""
+    global path
 
-    con = sqlite3.connect(
-        "/home/shin/Development/University/Dongguk/Dongguk-Script/DB/naverDB")
+    # con = sqlite3.connect(
+    #     "/home/shin/Development/University/Dongguk/Dongguk-Script/DB/naverDB")
+    con = sqlite3.connect(path)
     cur = con.cursor()
+
+    try:
+        cur.execute("CREATE TABLE userTable (id char(4), userName char(15), email char(20), birthYear int)")
+    except Exception as e:
+        print(e)
 
     data1 = edt1.get()
     data2 = edt2.get()
     data3 = edt3.get()
     data4 = edt4.get()
+    # try:
+    #     sql = "INSERT INTO userTable VALUES ('" + data1 + \
+    #         "','" + data2 + "','" + data3 + "'," + data4 + ")"
+    #     cur.execute(sql)
+    # except:
+    #     messagebox.showerror("오류", "데이터 입력 오류가 발생함")
+    # else:
+    #     messagebox.showinfo("성공", "데이터 입력 성공")
+    #     con.commit()
+    #     con.close()
     try:
-        sql = "INSERT INTO userTable VALUES ('" + data1 + \
-            "','" + data2 + "','" + data3 + "'," + data4 + ")"
+        sql = "INSERT INTO userTable VALUES ('" + data1 + "','" + data2 + "','" + data3 + "'," + data4 + ")"
         cur.execute(sql)
-    except:
-        messagebox.showerror("오류", "데이터 입력 오류가 발생함")
+    except Exception as e:
+        messagebox.showerror("오류", "데이터 입력 오류가 발생함: " + str(e))
+        traceback.print_exc()  # 오류 발생 이유 출력
     else:
         messagebox.showinfo("성공", "데이터 입력 성공")
+        cur.execute("SELECT COUNT(*) FROM userTable")
+        count = cur.fetchone()[0]
+        print("데이터 개수:", count)
         con.commit()
         con.close()
 
 
 def selectData():
+    global path
     strData1, strData2, strData3, strData4 = [], [], [], []
-    con = sqlite3.connect(
-        "/home/shin/Development/University/Dongguk/Dongguk-Script/DB/naverDB")
+    con = sqlite3.connect(path)
     cur = con.cursor()
     cur.execute("SELECT * FROM userTable")
     strData1.append("사용자ID")
@@ -121,6 +85,10 @@ def selectData():
 
     con.close()
 
+
+path = None
+path = os.path.expanduser('~/naverDB')
+path = path.replace('\\', '/')
 
 window = Tk()
 window.geometry("600x300")

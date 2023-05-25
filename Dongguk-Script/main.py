@@ -1,59 +1,92 @@
+from tkinter import *
+import sqlite3
+import os
 
-import random
-import math
-import turtle
 
-t1, t2, t3 = [None] * 3
-t1X, t1Y, t2X, t2Y, t3X, t3Y = [0] * 6
-swidth, sheight = 300, 300
+# img -> DB
+def loadImage(fname):
+    global path, inImage, XSIZE, YSIZE
+    
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+    fp = open(fname, 'rb')
+    for row in range(0, XSIZE):
+        for col in range(0, YSIZE):
+            data = int(ord(fp.read(1)))
+            sql = 'INSERT INTO rawTable VALUES(' + str(row) + "," + str(col) + "," + str(data) + ")" 
+            cur.execute(sql)
+    
+    fp.close()
+    con.commit()
+    con.close()
 
+
+# DB -> 메모리
+def loadDatabase():
+    global path, inImage, XSIZE, YSIZE
+    row, col, data = 0, 0, 0
+    record = None
+
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+    cur.execute("SELECT * FROM rawTable")
+    
+    # 빈 inImage 생성
+    for i in range(0, XSIZE):
+        tmpList = []
+        for k in range(0, YSIZE):
+            data = 0
+            tmpList.append(data)
+        inImage.append(tmpList)
+
+    # 테이블 --> inImage
+    while(True):
+        record = cur.fetchone()
+        if record == None:
+            break
+        row = record[0]
+        col = record[1]
+        data = record[2]
+        inImage[row][col] = data
+    
+    con.close()
+
+
+def displayImage(image):
+    global XSIZE, YSIZE
+    rgbString = ""
+    for i in range(0, XSIZE):
+        tmpString = ""
+        for k in range(0, YSIZE):
+            data = image[i][k]
+            tmpString += "#%02x%02x%02x " % (data, data, data)
+        rgbString += "{" + tmpString + "} "
+    paper.put(rgbString)
+
+path = os.path.expanduser('~/rawDB').replace('\\', '/')
+
+
+window, canvas, XSIZE, YSIZE = None, None, 256, 256
+inImage = []
 
 if __name__ == "__main__":
-    turtle.title("거북이 만나기")
-    turtle.setup(width=swidth + 50, height=swidth + 50)
-    turtle.screensize(swidth, sheight)
+    window = Tk()
+    window.title("RAW-->DB")
+    canvas = Canvas(window, height=XSIZE, width=YSIZE)
+    paper = PhotoImage(width=XSIZE, height=YSIZE)
+    canvas.create_image((XSIZE / 2, YSIZE / 2), image=paper, state="normal")
 
-    t1 = turtle.Turtle("turtle")
-    t1.color("red")
-    t1.penup()
-    t2 = turtle.Turtle("turtle")
-    t2.color("green")
-    t2.penup()
-    t3 = turtle.Turtle("turtle")
-    t3.color("blue")
-    t3.penup()
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+    cur.execute("DROP TABLE IF EXISTS rawTable")
+    cur.execute("CREATE TABLE rawTable(row int, col int, dta int)")  # 행, 열, 픽셀값
+    con.commit()
+    con.close()
 
-    t1.goto(-100, -100)
-    t2.goto(0, 0)
-    t3.goto(100, 100)
+    filename = 'C:/Users/shinj/Development/University/Dongguk/Dongguk-Script/source/RAW/tree.raw'
+    loadImage(filename)
+    loadDatabase()
+    displayImage(inImage)
 
-    while True:
-        angle = random.randrange(0, 360)
-        dist = random.randrange(1, 50)
-        t1.left(angle)
-        t1.forward(dist)
-        angle = random.randrange(0, 360)
-        dist = random.randrange(1, 50)
-        t2.left(angle)
-        t2.forward(dist)
-        angle = random.randrange(0, 360)
-        dist = random.randrange(1, 50)
-        t3.left(angle)
-        t3.forward(dist)
-
-        t1X = t1.xcor()
-        t1Y = t1.ycor()
-        t2X = t2.xcor()
-        t2Y = t2.ycor()
-        t3X = t3.xcor()
-        t3Y = t3.ycor()
-
-        if math.sqrt(((t1X - t2X) ** 2) + ((t1Y - t2Y) ** 2)) <= 20 or \
-                math.sqrt(((t1X - t3X) ** 2) + ((t1Y - t3Y) ** 2)) <= 20 or \
-                math.sqrt(((t2X - t3X) ** 2) + ((t2Y - t3Y) ** 2)) <= 20:
-            t1.turtlesize(3)
-            t2.turtlesize(3)
-            t3.turtlesize(3)
-            break
-
-turtle.done()
+    canvas.pack()
+    window.mainloop()

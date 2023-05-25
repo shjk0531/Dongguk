@@ -1,3 +1,5 @@
+import sqlite3
+import os
 from tkinter import *
 from tkinter.filedialog import *
 from tkinter.simpledialog import *
@@ -152,12 +154,99 @@ def func_bw():
     displayImage(photo2, newX, newY)
 
 
+
+def start():
+    global path
+    path = os.path.expanduser('~/naverDB').replace('\\', '/')
+
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+    try:
+        cur.execute("CREATE TABLE userTable (id int, name char(15), data text")
+    except Exception as e:
+        print(e)
+
+
+# sql 데이터 저장
+def insertData(img, width, height):
+    global path, idCount
+    global photo, photo2
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM userTable")
+    count = cur.fetchone()[0]
+    print("데이터 개수:", count)
+
+    imgRGB = img.convert('RGB')
+    RGBstr = ""
+    for i in range(0, height):
+        tmpstr = ""
+        for k in range(0, width):
+            r, g, b = imgRGB.getpixel((k,i))
+            tmpstr += "#%x%x%x" % (r, g, b)
+        RGBstr += tmpstr
+
+
+
+# img -> DB
+def loadImage(fname, width, height):
+    global path, inImage
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+    fp = open(fname, 'rb')
+    for row in range(0, width):
+        for col in range(0, height):
+            data = int(ord(fp.read(1)))
+            sql = 'INSERT INTO imgTable (' +str(row) + "," + str(col) + str(col) + "," + str(data) + ")" 
+            cur.execute(sql)
+    
+    fp.close()
+    con.commit()
+    con.close()
+
+
+# DB -> 메모리
+def loadDatabase(width, height):
+    global path, inImage
+    row, col, data = 0, 0, 0
+    record = None
+
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+    cur.execute("SELECT * FROM imgTable")
+    
+    # 빈 inImage 생성
+    for i in range(0, width):
+        tmpList = []
+        for k in range(0, height):
+            data = 0
+            tmpList.append(data)
+        inImage.append(tmpList)
+
+    # 테이블 --> inImage
+    while(True):
+        record = cur.fetchone()
+        if record == None:
+            break
+        row = record[0]
+        col = record[1]
+        data = record[2]
+        inImage[row][col] = data
+    
+    con.close
+
+def saveDatabase():
+    pass
+
 window, canvas, paper = None, None, None
 photo, photo2 = None, None
 oriX, oriY = 0, 0
+path = None
+idCount = 0
 
 window = Tk()
-window.geometry("250x250")
+window.geometry("600x300")
 window.title("미니 포토샵")
 
 mainMenu = Menu(window)
@@ -188,5 +277,15 @@ image2Menu.add_command(label="블러링", command=func_blur)
 image2Menu.add_command(label="엠보싱", command=func_embo)
 image2Menu.add_separator()
 image2Menu.add_command(label="흑백이미지", command=func_bw)
+
+edtFrame = Frame(window)
+edtFrame.pack(side=BOTTOM)
+
+edtName = Entry(edtFrame, width=10)
+edtName.pack(side=LEFT, padx=10, pady=10)
+btnInsert = Button(edtFrame, text="저장", command=saveDatabase)
+btnInsert.pack(side=LEFT)
+btnLoad = Button(edtFrame, text="조회", command=loadDatabase)
+btnLoad.pack(side=LEFT)
 
 window.mainloop()
