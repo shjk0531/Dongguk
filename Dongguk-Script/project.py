@@ -1,78 +1,109 @@
-import sqlite3
-import io
+# 필요한 모듈을 임포트합니다
 from tkinter import *
-from tkinter.filedialog import *
-from tkinter.simpledialog import *
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageTk
+from tkinter.filedialog import askopenfilename
+from tkinter.simpledialog import askinteger, askstring
+from PIL import Image, ImageTk, ImageFilter, ImageOps
+
+# 전역 변수를 선언합니다
+window, canvas, paper = None, None, None
+photo, photo2 = None, None
+oriX, oriY = 0, 0
+db_conn = None
+
+# 함수를 정의합니다
+
+# 데이터베이스 연결
 
 
+def connect_database():
+    global db_conn
+    db_conn = sqlite3.connect('image_database.db')
+    cursor = db_conn.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS images (name TEXT, image BLOB)')
 
-def displayImage(img, width, height):
-    global window, canvas, paper, photo, photo2, oriX, oriY
+# 데이터베이스 연결 해제
 
-    window.geometry(str(width) + "x" + str(height))
-    if canvas != None:
-        canvas.destroy()
 
-    canvas = Canvas(window, width=width, height=height)
-    paper = PhotoImage(width=width, height=height)
-    canvas.create_image((width / 2, height / 2), image=paper, state="normal")
-    rgbString = ""
-    rgbImage = img.convert('RGB')
-    for i in range(0, height):
-        tmpString = ""
-        for k in range(0, width):
-            r, g, b = rgbImage.getpixel((k, i))
-            tmpString += "#%02x%02x%02x " % (r, g, b)  # x 뒤에 한 칸 공백
-        rgbString += "{" + tmpString + "} "  # } 뒤에 한 칸 공백
-    paper.put(rgbString)
-    canvas.pack()
+def disconnect_database():
+    global db_conn
+    if db_conn:
+        db_conn.close()
+
+# 이미지를 데이터베이스에 저장
+
+
+def save_image_to_database(name, image):
+    global db_conn
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO images (name, image) VALUES (?, ?)", (name, image))
+    db_conn.commit()
+
+# 데이터베이스에서 이미지를 불러옴
+
+
+def load_image_from_database(name):
+    global db_conn
+    cursor = db_conn.cursor()
+    cursor.execute("SELECT image FROM images WHERE name=?", (name,))
+    image_data = cursor.fetchone()[0]
+    image = Image.open(BytesIO(image_data))
+    return image
+
+
+def displayImage(image, newX, newY):
+    global window, canvas, paper
+    canvas.delete("IMG")
+    canvas.config(width=newX, height=newY)
+    paper = PhotoImage(width=newX, height=newY)
+    canvas.create_image((newX // 2, newY // 2), image=paper, tag="IMG")
+    for i in range(0, newX, 10):
+        canvas.create_line([(i, 0), (i, newY)], tag='IMG', fill='gray')
+    for j in range(0, newY, 10):
+        canvas.create_line([(0, j), (newX, j)], tag='IMG', fill='gray')
+    image = image.resize((newX, newY))
+    paper = ImageTk.PhotoImage(image)
+    canvas.create_image((newX // 2, newY // 2), image=paper, tag="IMG")
 
 
 def func_open():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    readFp = askopenfilename(parent=window, filetypes=(
-        ("모든 그림 파일", "*.jpg; *.jpeg; *.bmp; *.png; *.tif; *.gif"), ("모든 파일", "*.*")))
-    photo = Image.open(readFp).convert('RGB')
-    oriX = photo.width
-    oriY = photo.height
 
+    # 파일을 열기 위한 대화상자를 표시하고 이미지를 불러옵니다
+    file = askopenfilename(parent=window,
+                           filetypes=(("GIF 파일", "*.gif"), ("모든 파일", "*.*")))
+    photo = Image.open(file)
     photo2 = photo.copy()
-    newX = photo2.width
-    newY = photo2.height
+    oriX, oriY = photo2.width, photo2.height
+    newX, newY = oriX, oriY
+
+    # 이미지를 화면에 표시합니다
+    window.geometry(str(newX) + "x" + str(newY))
     displayImage(photo2, newX, newY)
 
 
 def func_save():
     global window, canvas, paper, photo, photo2, oriX, oriY
 
-    if photo2 == None:
+    # 저장할 파일 경로를 선택하기 위한 대화상자를 표시하고 이미지를 저장합니다
+    if photo2 is None:
         return
-    saveFp = asksaveasfile(parent=window, mode="w", defaultextension=".jpg", filetypes=(
-        ("JPG 파일", "*.jpg; *.jpeg"), ("모든 파일", "*.*")))
-
-    photo2.save(saveFp.name)
+    file = asksaveasfilename(parent=window,
+                             filetypes=(("GIF 파일", "*.gif"), ("모든 파일", "*.*")),
+                             defaultextension=".gif")
+    photo2.save(file)
 
 
 def func_exit():
+    global window
+    disconnect_database()
+    window.quit()
+
+
+def func_zoom():
     global window, canvas, paper, photo, photo2, oriX, oriY
 
-    pass
-
-
-def func_zoomin():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    scale = askinteger("확대", "확대할 배율을 입력하세요", minvalue=2, maxvalue=4)
-    photo2 = photo.copy()
-    photo2 = photo2.resize((int(oriX * scale), int(oriY * scale)))
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
-
-
-def func_zoomout():
-    global window, canvas, paper, photo, photo2, oriX, oriY
+    # 이미지를 축소하기 위한 대화상자를 표시하고 입력값을 받아옵니다
     scale = askinteger("축소", "축소할 배율을 입력하세요", minvalue=2, maxvalue=4)
     photo2 = photo.copy()
     photo2 = photo2.resize((int(oriX / scale), int(oriY / scale)))
@@ -81,20 +112,26 @@ def func_zoomout():
     displayImage(photo2, newX, newY)
 
 
-def func_rotate():
+def func_flip():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    angle = askinteger("회전", "회전할 각도를 입력하세요", minvalue=0, maxvalue=360)
-    photo2 = photo.copy()
-    photo2 = photo2.rotate(angle)
+
+    # 이미지를 좌우로 뒤집습니다
+    if photo2 is None:
+        return
+    photo2 = photo2.transpose(Image.FLIP_LEFT_RIGHT)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
 
 
-def func_flip():
+def func_rotate():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = photo.copy()
-    photo2 = photo2.transpose(Image.FLIP_LEFT_RIGHT)
+
+    # 이미지를 회전하기 위한 대화상자를 표시하고 입력값을 받아옵니다
+    if photo2 is None:
+        return
+    degree = askinteger("회전", "회전할 각도를 입력하세요", minvalue=1, maxvalue=360)
+    photo2 = photo2.rotate(degree)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
@@ -102,7 +139,10 @@ def func_flip():
 
 def func_blur():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = photo.copy()
+
+    # 이미지를 흐리게 처리합니다
+    if photo2 is None:
+        return
     photo2 = photo2.filter(ImageFilter.BLUR)
     newX = photo2.width
     newY = photo2.height
@@ -111,28 +151,23 @@ def func_blur():
 
 def func_sharpen():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = photo.copy()
+
+    # 이미지를 날카롭게 처리합니다
+    if photo2 is None:
+        return
     photo2 = photo2.filter(ImageFilter.SHARPEN)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
 
 
-def func_bright():
+def func_bw():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    brightness = askfloat("밝기 조절", "밝기 조절 값을 입력하세요", minvalue=-1.0, maxvalue=1.0)
-    enhancer = ImageEnhance.Brightness(photo)
-    photo2 = enhancer.enhance(brightness)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
 
-
-def func_contrast():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    contrast = askfloat("대비 조절", "대비 조절 값을 입력하세요", minvalue=0.0, maxvalue=3.0)
-    enhancer = ImageEnhance.Contrast(photo)
-    photo2 = enhancer.enhance(contrast)
+    # 이미지를 흑백으로 변환합니다
+    if photo2 is None:
+        return
+    photo2 = photo2.convert("L")
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
@@ -140,7 +175,11 @@ def func_contrast():
 
 def func_invert():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = ImageOps.invert(photo)
+
+    # 이미지의 색상을 반전시킵니다
+    if photo2 is None:
+        return
+    photo2 = ImageOps.invert(photo2)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
@@ -148,185 +187,75 @@ def func_invert():
 
 def func_reset():
     global window, canvas, paper, photo, photo2, oriX, oriY
+
+    # 이미지를 원본으로 되돌립니다
     photo2 = photo.copy()
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
 
-def func_database():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    conn = sqlite3.connect("image.db")
-    cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, image BLOB, name TEXT)"
-    )
-    # Convert the image to bytes
-    img_byte_arr = io.BytesIO()
-    photo2.save(img_byte_arr, format="PNG")
-    img_bytes = img_byte_arr.getvalue()
-    
-    # Prompt for image name
-    name = askstring("이름 입력", "이미지의 이름을 입력하세요")
+
+# 데이터베이스에 저장
+def func_saveDatabase():
+    global photo2
+    if photo2 is None:
+        return
+    name = askstring("데이터베이스 저장", "이미지 이름을 입력하세요")
     if name:
-        # Insert image and name into the database
-        cursor.execute("INSERT INTO images (image, name) VALUES (?, ?)", (sqlite3.Binary(img_bytes), name))
-        conn.commit()
-        messagebox.showinfo("이미지 저장", "이미지가 데이터베이스에 저장되었습니다.")
-    conn.close()
+        photo2.save(name + ".gif")
 
 
+# 데이터베이스 불러오기
 def func_loadDatabase():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    conn = sqlite3.connect("image.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM images")
-    rows = cursor.fetchall()
-
-    # Create a new window to display the loaded images
-    load_window = Toplevel()
-    load_window.title("로드된 이미지")
-    load_window.geometry("400x400")
-
-    scrollbar = Scrollbar(load_window)
-    scrollbar.pack(side=RIGHT, fill=Y)
-
-    image_listbox = Listbox(load_window, yscrollcommand=scrollbar.set)
-    image_listbox.pack(side=LEFT, fill=BOTH)
-
-    scrollbar.config(command=image_listbox.yview)
-
-    loaded_images = []  # Store the loaded images for future reference
-
-    def select_image(event):
-        selection = image_listbox.curselection()
-        if selection:
-            index = selection[0]
-            _, selected_image, _ = loaded_images[index]
-            displayImage(selected_image)
-
-            # Add a button to return to the main menu
-            return_button = Button(load_window, text="확인", command=load_window.destroy)
-            return_button.pack()
-
-    for row in rows:
-        image = Image.open(io.BytesIO(row[1]))
-        image.thumbnail((50, 50))  # Resize the image for display
-        photo = ImageTk.PhotoImage(image)
-        loaded_images.append((row[0], image, photo))  # Save the image and photo pair
-        image_listbox.insert(END, row[2])  # Display the name in the listbox
-
-    image_listbox.bind("<<ListboxSelect>>", select_image)
-
-    conn.close()
-
-# Move the select_image function outside of func_loadDatabase
-def select_image(event):
-    selection = image_listbox.curselection()
-    if selection:
-        index = selection[0]
-        _, selected_image, _ = loaded_images[index]
-        displayImage(selected_image, newX, newY)
-
-        # Add a button to return to the main menu
-        return_button = Button(load_window, text="확인", command=load_window.destroy)
-        return_button.pack()
-
-def func_exit():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    window.quit()
-    window.destroy()
+    global photo, photo2
+    file = askopenfilename(parent=window, filetypes=(
+        ("GIF 파일", "*.gif"), ("모든 파일", "*.*")))
+    if file:
+        photo = Image.open(file)
+        photo2 = photo.copy()
+        oriX, oriY = photo2.width, photo2.height
+        newX, newY = oriX, oriY
+        window.geometry(str(newX) + "x" + str(newY))
+        displayImage(photo2, newX, newY)
 
 
+# 메인 코드를 실행합니다
 window = Tk()
-window.geometry("250x250")
-window.title("이미지 처리")
+window.title("이미지 처리 프로그램")
 
+# 캔버스를 생성합니다
+canvas = Canvas(window, height=500, width=500)
+canvas.pack()
+
+# 메뉴를 생성합니다
 mainMenu = Menu(window)
 window.config(menu=mainMenu)
-
 fileMenu = Menu(mainMenu)
 mainMenu.add_cascade(label="파일", menu=fileMenu)
 fileMenu.add_command(label="열기", command=func_open)
+fileMenu.add_command(label="저장", command=func_save)
 fileMenu.add_separator()
 fileMenu.add_command(label="종료", command=func_exit)
 
 imageMenu = Menu(mainMenu)
 mainMenu.add_cascade(label="이미지", menu=imageMenu)
-imageMenu.add_command(label="축소", command=func_zoomout)
+imageMenu.add_command(label="축소", command=func_zoom)
+imageMenu.add_command(label="좌우 뒤집기", command=func_flip)
 imageMenu.add_command(label="회전", command=func_rotate)
-imageMenu.add_command(label="뒤집기", command=func_flip)
-
-effectMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="효과", menu=effectMenu)
-effectMenu.add_command(label="흐리게", command=func_blur)
-effectMenu.add_command(label="선명하게", command=func_sharpen)
-effectMenu.add_separator()
-effectMenu.add_command(label="밝기 조절", command=func_bright)
-effectMenu.add_command(label="대비 조절", command=func_contrast)
-effectMenu.add_separator()
-effectMenu.add_command(label="색상 반전", command=func_invert)
-
-toolMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="도구", menu=toolMenu)
-toolMenu.add_command(label="원본 이미지로 복원", command=func_reset)
-toolMenu.add_separator()
-toolMenu.add_command(label="데이터베이스에 저장", command=func_database)
-toolMenu.add_separator()
-toolMenu.add_command(label="데이터베이스 불러오기", command=func_loadDatabase)
+imageMenu.add_separator()
+imageMenu.add_command(label="흐리게", command=func_blur)
+imageMenu.add_command(label="날카롭게", command=func_sharpen)
+imageMenu.add_separator()
+imageMenu.add_command(label="흑백", command=func_bw)
+imageMenu.add_command(label="색상 반전", command=func_invert)
+imageMenu.add_separator()
+imageMenu.add_command(label="원본으로 되돌리기", command=func_reset)
 
 
-canvas = Canvas(window, height=500, width=500)
-canvas.pack()
+databaseMenu = Menu(mainMenu)
+mainMenu.add_cascade(label="데이터베이스", menu=databaseMenu)
+databaseMenu.add_command(label="데이터베이스 저장", command=func_saveDatabase)
+databaseMenu.add_command(label="데이터베이스 불러오기", command=func_loadDatabase)
 
-window.mainloop()
-
-
-
-def func_exit():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    window.quit()
-    window.destroy()
-
-
-window = Tk()
-window.geometry("250x250")
-window.title("이미지 처리")
-
-mainMenu = Menu(window)
-window.config(menu=mainMenu)
-
-fileMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="파일", menu=fileMenu)
-fileMenu.add_command(label="열기", command=func_open)
-fileMenu.add_separator()
-fileMenu.add_command(label="종료", command=func_exit)
-
-imageMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="이미지", menu=imageMenu)
-imageMenu.add_command(label="축소", command=func_zoomout)
-imageMenu.add_command(label="회전", command=func_rotate)
-imageMenu.add_command(label="뒤집기", command=func_flip)
-
-effectMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="효과", menu=effectMenu)
-effectMenu.add_command(label="흐리게", command=func_blur)
-effectMenu.add_command(label="선명하게", command=func_sharpen)
-effectMenu.add_separator()
-effectMenu.add_command(label="밝기 조절", command=func_bright)
-effectMenu.add_command(label="대비 조절", command=func_contrast)
-effectMenu.add_separator()
-effectMenu.add_command(label="색상 반전", command=func_invert)
-
-toolMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="도구", menu=toolMenu)
-toolMenu.add_command(label="원본 이미지로 복원", command=func_reset)
-toolMenu.add_separator()
-toolMenu.add_command(label="데이터베이스에 저장", command=func_database)
-toolMenu.add_separator()
-toolMenu.add_command(label="데이터베이스 불러오기", command=func_loadDatabase)
-
-
-canvas = Canvas(window, height=500, width=500)
-canvas.pack()
-
+# 이벤트 루프를 시작합니다
 window.mainloop()

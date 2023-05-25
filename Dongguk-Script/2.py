@@ -4,6 +4,8 @@ from tkinter import *
 from tkinter.filedialog import *
 from tkinter.simpledialog import *
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps
+from tkinter.messagebox import showerror, showinfo
+import shutil
 
 
 def displayImage(img, width, height):
@@ -50,12 +52,15 @@ def func_save():
     saveFp = asksaveasfile(parent=window, mode="w", defaultextension=".jpg", filetypes=(
         ("JPG 파일", "*.jpg; *jpeg"), ("모든 파일", "*.*")))
 
-    photo2.save(saveFp.name)
+    if saveFp:
+        photo2.save(saveFp.name)
+        saveToDatabase(os.path.basename(saveFp.name)[:-4], saveFp.name)
 
 
 def func_exit():
-    global window
-    window.destroy()
+    global window, canvas, paper, photo, photo2, oriX, oriY
+
+    pass
 
 
 def func_zoomin():
@@ -78,19 +83,10 @@ def func_zoomout():
     displayImage(photo2, newX, newY)
 
 
-def func_mirror1():
+def func_mirror():
     global window, canvas, paper, photo, photo2, oriX, oriY
     photo2 = photo.copy()
-    photo2 = photo2.transpose(Image.FLIP_TOP_BOTTOM)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
-
-
-def func_mirror2():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = photo.copy()
-    photo2 = photo2.transpose(Image.FLIP_LEFT_RIGHT)
+    photo2 = ImageOps.mirror(photo2)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
@@ -98,9 +94,9 @@ def func_mirror2():
 
 def func_rotate():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    degree = askinteger("회전", "회전할 각도를 입력하세요", minvalue=0, maxvalue=360)
+    angle = askinteger("회전", "회전할 각도를 입력하세요", minvalue=1, maxvalue=360)
     photo2 = photo.copy()
-    photo2 = photo2.rotate(degree, expand=True)
+    photo2 = photo2.rotate(angle)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
@@ -108,119 +104,112 @@ def func_rotate():
 
 def func_bright():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    value = askfloat("밝게", "값을 입력하세요(1.0~10.0)", minvalue=1.0, maxvalue=10.0)
-    photo2 = photo.copy()
-    photo2 = ImageEnhance.Brightness(photo2).enhance(value)
+    value = askfloat("밝게", "밝게 할 값(0~2)을 입력하세요", minvalue=0.0, maxvalue=2.0)
+    enhancer = ImageEnhance.Brightness(photo)
+    photo2 = enhancer.enhance(value)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
 
 
-def func_dart():
+def func_dark():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    value = askfloat("어둡게", "값을 입력하세요(0.0~1.0)", minvalue=0.0, maxvalue=1.0)
-    photo2 = photo.copy()
-    photo2 = ImageEnhance.Brightness(photo2).enhance(value)
+    value = askfloat("어둡게", "어둡게 할 값(0~2)을 입력하세요", minvalue=0.0, maxvalue=2.0)
+    enhancer = ImageEnhance.Brightness(photo)
+    photo2 = enhancer.enhance(1 / value)
     newX = photo2.width
     newY = photo2.height
     displayImage(photo2, newX, newY)
 
 
-def func_blur():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = photo.copy()
-    photo2 = photo2.filter(ImageFilter.BLUR)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
-
-
-def func_embo():
+def func_clear():
     global window, canvas, paper, photo, photo2, oriX, oriY
     photo2 = photo.copy()
-    photo2 = photo2.filter(ImageFilter.EMBOSS)
-    newX = photo2.width
-    newY = photo2.height
+    newX = oriX
+    newY = oriY
     displayImage(photo2, newX, newY)
 
 
-def func_bw():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    photo2 = photo.copy()
-    photo2 = ImageOps.grayscale(photo2)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
+def saveToDatabase(title, path):
+    conn = sqlite3.connect('imageDB')
+    cur = conn.cursor()
+    sql = "CREATE TABLE IF NOT EXISTS imageTable (title TEXT, path TEXT)"
+    cur.execute(sql)
+    sql = "SELECT * FROM imageTable WHERE title='" + title + "'"
+    cur.execute(sql)
+    if cur.fetchone() != None:
+        sql = "UPDATE imageTable SET path=? WHERE title=?"
+        cur.execute(sql, (path, title))
+    else:
+        sql = "INSERT INTO imageTable VALUES (?, ?)"
+        cur.execute(sql, (title, path))
+    conn.commit()
+    conn.close()
 
 
-def insertDatabase():
-    global path, photo, photo2, idCount
-    path = os.path.expanduser('~/imgDB').replace('\\', '/')
-
-    con = sqlite3.connect(path)
-    cur = con.cursor()
-
-    con.close()
-    pass
-
-
-def loadDatabase():
-    global path, photo, photo2
-    path = os.path.expanduser('~/imgDB').replace('\\', '/')
-
-    con = sqlite3.connect(path)
-    cur = con.cursor()
-
-    con.close()
-    pass
+def insertData():
+    conn = sqlite3.connect('imageDB')
+    cur = conn.cursor()
+    dirName = askdirectory()
+    for dirName, subDirList, fnames in os.walk(dirName):
+        for fname in fnames:
+            if os.path.basename(fname).split(".")[1].upper() in ['JPG', 'JPEG', 'BMP', 'PNG']:
+                fullPath = os.path.join(dirName, fname)
+                title = os.path.basename(fname)
+                with open(fullPath, 'rb') as f:
+                    blobData = f.read()
+                sql = "INSERT INTO imageTable (title, path) VALUES (?, ?)"
+                cur.execute(sql, (title, fullPath))
+    conn.commit()
+    conn.close()
 
 
-window, canvas, paper = None, None, None
-photo, photo2 = None, None
-oriX, oriY = 0, 0
-path = None
-idCount = 0
+def loadData():
+    conn = sqlite3.connect('imageDB')
+    cur = conn.cursor()
+    sql = "SELECT title FROM imageTable"
+    cur.execute(sql)
+    fileList = cur.fetchall()
+    for fname in fileList:
+        listBox.insert(END, fname[0])
+    conn.close()
+
+
+def func_exit():
+    window.quit()
+    window.destroy()
+
 
 window = Tk()
-window.geometry("600x300")
-window.title("미니 포토샵")
+window.geometry("250x250")
+window.title("이미지 뷰어")
+
+canvas = Canvas(window, height=250, width=250)
+canvas.pack()
 
 mainMenu = Menu(window)
 window.config(menu=mainMenu)
 
 fileMenu = Menu(mainMenu)
 mainMenu.add_cascade(label="파일", menu=fileMenu)
-fileMenu.add_command(label="파일 열기", command=func_open)
-fileMenu.add_command(label="파일 저장", command=func_save)
+fileMenu.add_command(label="파일 추가", command=insertData)
 fileMenu.add_separator()
-fileMenu.add_command(label="프로그램 종료", command=func_exit)
+fileMenu.add_command(label="종료", command=func_exit)
 
-image1Menu = Menu(mainMenu)
-mainMenu.add_cascade(label="이미지 처리(1)", menu=image1Menu)
-image1Menu.add_command(label="확대", command=func_zoomin)
-image1Menu.add_command(label="축소", command=func_zoomout)
-image1Menu.add_separator()
-image1Menu.add_command(label="상하 반전", command=func_mirror1)
-image1Menu.add_command(label="좌우 반전", command=func_mirror2)
-image1Menu.add_command(label="회전", command=func_rotate)
+imageDBMenu = Menu(mainMenu)
+mainMenu.add_cascade(label="DB", menu=imageDBMenu)
+imageDBMenu.add_command(label="불러오기", command=loadData)
 
-image2Menu = Menu(mainMenu)
-mainMenu.add_cascade(label="이미지 처리(2)", menu=image2Menu)
-image2Menu.add_command(label="밝게", command=func_bright)
-image2Menu.add_command(label="어둡게", command=func_dart)
-image2Menu.add_separator()
-image2Menu.add_command(label="블러링", command=func_blur)
-image2Menu.add_command(label="엠보싱", command=func_embo)
-image2Menu.add_separator()
-image2Menu.add_command(label="흑백이미지", command=func_bw)
-
-edtFrame = Frame(window)
-edtFrame.pack(side=BOTTOM)
-
-btnInsert = Button(edtFrame, text="저장", command=insertDatabase)
-btnInsert.pack(side=LEFT)
-btnLoad = Button(edtFrame, text="조회", command=loadDatabase)
-btnLoad.pack(side=LEFT)
-
+controlMenu = Menu(mainMenu)
+mainMenu.add_cascade(label="제어", menu=controlMenu)
+controlMenu.add_command(label="확대", command=func_zoomin)
+controlMenu.add_command(label="축소", command=func_zoomout)
+controlMenu.add_command(label="좌우 반전", command=func_mirror)
+controlMenu.add_command(label="회전", command=func_rotate)
+controlMenu.add_separator()
+controlMenu.add_command(label="밝게", command=func_bright)
+controlMenu.add_command(label="어둡게", command=func_dark)
+controlMenu.add_separator()
+controlMenu.add_command(label="원본 복원", command=func_clear)
 
 window.mainloop()
