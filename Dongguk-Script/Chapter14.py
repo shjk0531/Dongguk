@@ -27,13 +27,14 @@ def displayImage(img, width, height):
             tmpString += "#%02x%02x%02x " % (r, g, b)   # x 뒤에 한 칸 공백
         rgbString += "{" + tmpString + "} "             # } 뒤에 한 칸 공백
     paper.put(rgbString)
-    canvas.pack(padx=10, pady=10)
+    canvas.pack(padx=20, pady=(20, 10))
 
 
 def func_open():
     global window, canvas, paper, photo, photo2, oriX, oriY
     readFp = askopenfilename(parent=window, filetypes=(
-        ("모든 그림 파일", "*.jpeg, *.bmp, *.png, *tif, *gif, *.jpg"), ("모든 파일", "*.*")))
+        ("jpg 파일", "*.jpg"), ("png 파일", "*.png"), ("gif 파일", "*.gif"),
+        ("jpeg 파일", "*.jpeg"), ("bmp 파일", "*.bmp"), ("tif 파일", "*.tif"), ("모든 파일", "*.*")))
     photo = Image.open(readFp).convert('RGB')
     oriX = photo.width
     oriY = photo.height
@@ -286,6 +287,57 @@ def func_smooth():
     displayImage(photo2, newX, newY)
 
 
+def func_detail():
+    global window, canvas, paper, photo, photo2, oriX, oriY
+    photo2 = photo2.filter(ImageFilter.DETAIL)
+    newX = photo2.width
+    newY = photo2.height
+    displayImage(photo2, newX, newY)
+
+
+def func_denoise():
+    global window, canvas, paper, photo, photo2, oriX, oriY
+    photo2 = photo2.filter(ImageFilter.SHARPEN)
+    newX = photo2.width
+    newY = photo2.height
+    displayImage(photo2, newX, newY)
+
+
+
+
+
+# def insert_database(name):
+#     global path, photo, photo2, idCount
+#     path = os.path.expanduser('~/imgDB').replace('\\', '/')
+
+#     con = sqlite3.connect(path)
+#     cur = con.cursor()
+
+#     cur.execute(
+#         "CREATE TABLE IF NOT EXISTS imageDB (id INTEGER PRIMARY KEY, name TEXT, extension TEXT, image BLOB)")
+
+#     # 이미지 이름 중복 체크
+#     cur.execute("SELECT name FROM imageDB WHERE name=?", (name,))
+#     existing_name = cur.fetchone()
+
+#     if existing_name:
+#         messagebox.showerror("오류", "이미 동일한 이름이 존재합니다. 다른 이름을 입력하세요.")
+#         con.close()
+#         return
+
+#     extension = photo.format
+
+#     image_data = io.BytesIO()
+#     photo2.save(image_data, format='JPEG')
+#     image_data = image_data.getvalue()
+
+#     cur.execute("INSERT INTO imageDB (name, extension, image) VALUES (?, ?, ?)",
+#                 (name, extension, image_data))
+
+#     messagebox.showinfo("저장 완료", "이미지 저장이 완료되었습니다.")
+#     con.commit()
+#     con.close()
+
 def insert_database(name):
     global path, photo, photo2, idCount
     path = os.path.expanduser('~/imgDB').replace('\\', '/')
@@ -296,18 +348,31 @@ def insert_database(name):
     cur.execute(
         "CREATE TABLE IF NOT EXISTS imageDB (id INTEGER PRIMARY KEY, name TEXT, extension TEXT, image BLOB)")
 
+    # 이미지 이름 중복 체크
+    cur.execute("SELECT name FROM imageDB WHERE name=?", (name,))
+    existing_name = cur.fetchone()
+
+    if existing_name:
+        result = messagebox.askquestion("중복 확인", "이미 동일한 이름이 존재합니다. 기존 데이터를 덮어쓰시겠습니까?")
+        if result == 'no':
+            con.close()
+            return
+
     extension = photo.format
 
     image_data = io.BytesIO()
     photo2.save(image_data, format='JPEG')
     image_data = image_data.getvalue()
 
-    cur.execute("INSERT INTO imageDB (name, extension, image) VALUES (?, ?, ?)",
-                (name, extension, image_data))
+    if existing_name:
+        cur.execute("UPDATE imageDB SET extension=?, image=? WHERE name=?", (extension, image_data, name))
+    else:
+        cur.execute("INSERT INTO imageDB (name, extension, image) VALUES (?, ?, ?)", (name, extension, image_data))
 
     messagebox.showinfo("저장 완료", "이미지 저장이 완료되었습니다.")
     con.commit()
     con.close()
+
 
 
 def input_name():
@@ -328,16 +393,17 @@ def insert_image_to_db():
 
     name_window = Tk()
     name_window.title("이름 입력")
-    name_window.geometry("200x100")
+    name_window.geometry("200x110")
 
-    label_name = Label(name_window, text="이름:")
-    label_name.pack()
+    label_name = Label(name_window, text="이미지 이름 입력")
+    label_name.pack(padx=5, pady=8)
 
     entry_name = Entry(name_window)
-    entry_name.pack()
+    entry_name.pack(padx=10, pady=(3,10))
 
-    btn_submit = Button(name_window, text="확인", command=input_name)
-    btn_submit.pack()
+    btn_submit = Button(name_window, text="확인", 
+                        command=input_name, width=8, height=1)
+    btn_submit.pack(padx=5, pady=5)
 
     name_window.mainloop()
 
@@ -357,18 +423,23 @@ def load_database():
     if rows:
         name_window = Tk()
         name_window.title("이미지 선택")
-        name_window.geometry("200x200")
+        name_window.geometry("200x370")
 
-        label_name = Label(name_window, text="이미지 선택:")
-        label_name.pack()
+        label_name = Label(name_window, text="이미지 선택")
+        label_name.pack(pady=5)
 
-        name_listbox = Listbox(name_window)
+        name_listbox = Listbox(name_window, height=15)
         for row in rows:
             name_listbox.insert(END, row[0])
-        name_listbox.pack()
+        name_listbox.pack(pady=(0,10))
 
-        load_button = Button(name_window, text="로드", command=load_image)
-        load_button.pack()
+        load_button = Button(name_window, text="로드", 
+                             command=load_image, width=8, height=1)
+        load_button.pack(padx=10, pady=5)
+
+        delete_button = Button(name_window, text="삭제",
+                               command=delete_DB, width=8, height=1)
+        delete_button.pack(pady=5)
 
         name_window.mainloop()
     else:
@@ -403,6 +474,27 @@ def load_image():
         messagebox.showinfo("로드 실패", "로드할 이미지가 없습니다.")
 
 
+def delete_DB():
+    global name_window, name_listbox, load_button, path, photo, photo2, oriX, oriY, window, canvas
+
+    selected_name = name_listbox.get(ANCHOR)
+    path = os.path.expanduser('~/imgDB').replace('\\', '/')
+
+    con = sqlite3.connect(path)
+    cur = con.cursor()
+
+    cur.execute("DELETE FROM imageDB WHERE name=?", (selected_name,))
+    con.commit()
+    con.close()
+
+    messagebox.showinfo("삭제 완료", "데이터 삭제가 완료되었습니다.")
+
+    # 기존 이미지 선택 창을 닫음
+    name_window.destroy()
+
+    # 삭제 후 리스트 박스 업데이트
+    load_database()
+
 window, canvas, paper = None, None, None
 photo, photo2 = None, None
 oriX, oriY = 0, 0
@@ -413,7 +505,7 @@ scale = 0
 window = Tk()
 window.geometry("600x300")
 window.title("미니 포토샵")
-window.minsize(600, 500)
+window.minsize(600, 400)
 
 main_menu = Menu(window)
 window.config(menu=main_menu)
@@ -445,7 +537,6 @@ btn_bright = Button(imageFrame, text="밝게",
                     command=func_bright, width=8, height=1)
 btn_dart = Button(imageFrame, text="어둡게", command=func_dart, width=8, height=1)
 btn_blur = Button(imageFrame, text="블러", command=func_blur, width=8, height=1)
-btn_embo = Button(imageFrame, text="엠보싱", command=func_embo, width=8, height=1)
 
 btn_zoomIn.pack(padx=5, pady=5)
 btn_zoomOut.pack(padx=5, pady=5)
@@ -455,34 +546,44 @@ btn_rotate.pack(padx=5, pady=5)
 btn_bright.pack(padx=5, pady=5)
 btn_dart.pack(padx=5, pady=5)
 btn_blur.pack(padx=5, pady=5)
-btn_embo.pack(padx=5, pady=5)
 
 
+btn_embo = Button(imageFrame2, text="엠보싱", command=func_embo, width=8, height=1)
 btn_bw = Button(imageFrame2, text="흑백", command=func_bw, width=8, height=1)
-btn_edge = Button(imageFrame2, text="선 선명",
+btn_edge = Button(imageFrame2, text="선 강조",
                   command=func_edge, width=8, height=1)
 btn_contour = Button(imageFrame2, text="윤곽",
                      command=func_contour, width=8, height=1)
 btn_smooth = Button(imageFrame2, text="부드럽게",
                     command=func_smooth, width=8, height=1)
+btn_detail = Button(imageFrame2, text="디테일",
+                      command=func_detail, width=8, height=1)
+btn_denoise = Button(imageFrame2, text="선명히",
+                      command=func_denoise, width=8, height=1)
 btn_rollback = Button(imageFrame2, text="복원",
                       command=func_rollback, width=8, height=1)
 
+
+btn_embo.pack(padx=5, pady=5)
 btn_bw.pack(padx=5, pady=5)
 btn_edge.pack(padx=5, pady=5)
 btn_contour.pack(padx=5, pady=5)
 btn_smooth.pack(padx=5, pady=5)
+btn_detail.pack(padx=5, pady=5)
+btn_denoise.pack(padx=5, pady=5)
 btn_rollback.pack(padx=5, pady=5)
 
 
 edt_frame = Frame(window, padx=10, pady=10)
 edt_frame.pack(side=BOTTOM)
 
-btn_insert = Button(edt_frame, text="이미지 저장", command=insert_image_to_db)
-btn_load = Button(edt_frame, text="이미지 로드", command=load_database)
+btn_insert = Button(edt_frame, text="이미지 저장", 
+                    command=insert_image_to_db, width=11, height=1)
+btn_load = Button(edt_frame, text="이미지 조회", 
+                  command=load_database, width=11, height=1)
 
-btn_insert.pack(side=LEFT, padx=5, pady=5)
-btn_load.pack(side=LEFT, padx=5, pady=5)
+btn_insert.pack(side=LEFT, padx=20, pady=5)
+btn_load.pack(side=LEFT, padx=20, pady=5)
 
 
 window.mainloop()
