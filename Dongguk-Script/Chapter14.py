@@ -1,7 +1,7 @@
 import sqlite3
 import os, io
 from tkinter import *
-from tkinter import messagebox, ttk
+from tkinter import messagebox
 from tkinter.filedialog import *
 from tkinter.simpledialog import *
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps
@@ -63,38 +63,60 @@ def input_scale():
     global scale_window, scale_value
 
 def func_zoomin():
-    global window, canvas, paper, photo, photo2, oriX, oriY, scale_window, scale_value
+    global window, canvas, paper, photo, photo2, oriX, oriY, scale_window
 
     def get_scale_value():
+        global photo2, oriX, oriY
         value = scale_value.get()
+        if value == 0.0:
+            value = scale.get()  # 사용자가 설정한 Scale 값으로 변경
+        photo2 = photo2.resize((int(oriX * value), int(oriY * value)))
+        newX = photo2.width
+        newY = photo2.height
+        displayImage(photo2, newX, newY)
+        scale_window.destroy()
 
     scale_window = Tk()
     scale_window.title("확대 배율 선택")
-    scale_window.geometry("200x100")
+    scale_window.geometry("400x150")
 
     scale_value = DoubleVar()
-    scale = Scale(scale_window, variable=scale_value, from_=2, to=4, resolution=0.01)
-    scale.pack()
+    scale = Scale(scale_window, variable=scale_value, from_=1, to=4, resolution=0.01, orient="horizontal", length=400, tickinterval=0.5)
+    scale.pack(padx=15, pady=15)
 
-    btn = Button(scale_window, text="확인", command=get_scale_value)
-    btn.pack()
+    btn = Button(scale_window, text="확인", command=get_scale_value, width=8, height=1)
+    btn.pack(padx=5, pady=5)
 
     window.mainloop()
 
-    scale = askinteger("확대", "확대할 배율을 입력하세요", minvalue=2, maxvalue=4)
-    photo2 = photo2.resize((int(oriX*scale), int(oriY*scale)))
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
 
 
 def func_zoomout():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    scale = askinteger("축소", "축소할 배율을 입력하세요", minvalue=2, maxvalue=4)
-    photo2 = photo2.resize((int(oriX/scale), int(oriY/scale)))
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
+    global window, canvas, paper, photo, photo2, oriX, oriY, scale_window
+
+    def get_scale_value():
+        global photo2, oriX, oriY
+        value = scale_value.get()
+        if value == 0.0:
+            value = scale.get()  # 사용자가 설정한 Scale 값으로 변경
+        photo2 = photo2.resize((int(oriX / value), int(oriY / value)))
+        newX = photo2.width
+        newY = photo2.height
+        displayImage(photo2, newX, newY)
+        scale_window.destroy()
+
+    scale_window = Tk()
+    scale_window.title("축소 배율 선택")
+    scale_window.geometry("400x150")
+
+    scale_value = DoubleVar()
+    scale = Scale(scale_window, variable=scale_value, from_=1, to=10, resolution=0.01, orient="horizontal", length=400, tickinterval=1)
+    scale.pack(padx=15, pady=15)
+
+    btn = Button(scale_window, text="확인", command=get_scale_value, width=8, height=1)
+    btn.pack(padx=5, pady=5)
+
+    window.mainloop()
 
 
 def func_mirror1():
@@ -114,30 +136,85 @@ def func_mirror2():
 
 
 def func_rotate():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    degree = askinteger("회전", "회전할 각도를 입력하세요", minvalue=0, maxvalue=360)
-    photo2 = photo2.rotate(degree, expand=True)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
+    global window, canvas, paper, photo, photo2, oriX, oriY, scale_window
+    def get_scale_value():
+        global photo2, oriX, oriY
+        value = scale_value.get()
+        if value == 0.0:
+            value = scale.get()  # 사용자가 설정한 Scale 값으로 변경
+        photo2 = photo2.rotate(value, expand=True)
+        newX = photo2.width
+        newY = photo2.height
+        displayImage(photo2, newX, newY)
+        scale_window.destroy()
+
+    scale_window = Tk()
+    scale_window.title("회전 각도 선택")
+    scale_window.geometry("400x150")
+
+    scale_value = DoubleVar()
+    scale = Scale(scale_window, variable=scale_value, from_=0, to=360, resolution=5, orient="horizontal", length=400, tickinterval=30)
+    scale.pack(padx=15, pady=15)
+
+    btn = Button(scale_window, text="확인", command=get_scale_value, width=8, height=1)
+    btn.pack(padx=5, pady=5)
+
+    window.mainloop()
 
 
 def func_bright():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    value = askfloat("밝게", "값을 입력하세요(1.0~10.0)", minvalue=1.0, maxvalue=10.0)
-    photo2 = ImageEnhance.Brightness(photo2).enhance(value)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
+    global window, canvas, paper, photo, photo2, oriX, oriY, scale_window
+    def get_scale_value():
+        global photo2, oriX, oriY
+        value = scale_value.get()
+        if value == 0.0:
+            value = scale.get()  # 사용자가 설정한 Scale 값으로 변경
+        photo2 =ImageEnhance.Brightness(photo2).enhance(value)
+        newX = photo2.width
+        newY = photo2.height
+        displayImage(photo2, newX, newY)
+        scale_window.destroy()
+
+    scale_window = Tk()
+    scale_window.title("밝게 설정")
+    scale_window.geometry("400x150")
+
+    scale_value = DoubleVar()
+    scale = Scale(scale_window, variable=scale_value, from_=0, to=10, resolution=0.1, orient="horizontal", length=400, tickinterval=1)
+    scale.pack(padx=15, pady=15)
+
+    btn = Button(scale_window, text="확인", command=get_scale_value, width=8, height=1)
+    btn.pack(padx=5, pady=5)
+
+    window.mainloop()
+    
 
 
 def func_dart():
-    global window, canvas, paper, photo, photo2, oriX, oriY
-    value = askfloat("어둡게", "값을 입력하세요(0.0~1.0)", minvalue=0.0, maxvalue=1.0)
-    photo2 = ImageEnhance.Brightness(photo2).enhance(value)
-    newX = photo2.width
-    newY = photo2.height
-    displayImage(photo2, newX, newY)
+    global window, canvas, paper, photo, photo2, oriX, oriY, scale_window
+    def get_scale_value():
+        global photo2, oriX, oriY
+        value = scale_value.get()
+        if value == 0.0:
+            value = scale.get()  # 사용자가 설정한 Scale 값으로 변경
+        photo2 =ImageEnhance.Brightness(photo2).enhance(1/value)
+        newX = photo2.width
+        newY = photo2.height
+        displayImage(photo2, newX, newY)
+        scale_window.destroy()
+
+    scale_window = Tk()
+    scale_window.title("어둡게 설정")
+    scale_window.geometry("400x150")
+
+    scale_value = DoubleVar()
+    scale = Scale(scale_window, variable=scale_value, from_=0, to=10, resolution=0.1, orient="horizontal", length=400, tickinterval=1)
+    scale.pack(padx=15, pady=15)
+
+    btn = Button(scale_window, text="확인", command=get_scale_value, width=8, height=1)
+    btn.pack(padx=5, pady=5)
+
+    window.mainloop()
 
 
 def func_blur():
@@ -171,8 +248,34 @@ def func_rollback():
     displayImage(photo2, newX, newY)
 
 
+def func_edge():
+    global window, canvas, paper, photo, photo2, oriX, oriY
+    photo2 = photo2.filter(ImageFilter.EDGE_ENHANCE)
+    newX = photo2.width
+    newY = photo2.height
+    displayImage(photo2, newX, newY)
 
-def insertDatabase(name):
+
+def func_contour():
+    global window, canvas, paper, photo, photo2, oriX, oriY
+    photo2 = photo2.filter(ImageFilter.CONTOUR)
+    newX = photo2.width
+    newY = photo2.height
+    displayImage(photo2, newX, newY)
+
+def func_smooth():
+    global window, canvas, paper, photo, photo2, oriX, oriY
+    photo2 = photo2.filter(ImageFilter.SMOOTH)
+    newX = photo2.width
+    newY = photo2.height
+    displayImage(photo2, newX, newY)
+
+
+
+
+
+
+def insert_database(name):
     global path, photo, photo2, idCount
     path = os.path.expanduser('~/imgDB').replace('\\', '/')
 
@@ -195,7 +298,7 @@ def insertDatabase(name):
     con.close()
     
 
-def inputName():
+def input_name():
     global entry_name, name_window
     
     name = entry_name.get().strip()
@@ -204,7 +307,7 @@ def inputName():
         messagebox.showwarning("경고", "이미지 이름을 입력하세요.")
         return
 
-    insertDatabase(name)
+    insert_database(name)
     name_window.destroy()
 
 
@@ -221,14 +324,14 @@ def insert_image_to_db():
     entry_name = Entry(name_window)
     entry_name.pack()
 
-    btn_submit = Button(name_window, text="확인", command=inputName)
+    btn_submit = Button(name_window, text="확인", command=input_name)
     btn_submit.pack()
 
     name_window.mainloop()
 
 
 
-def loadDatabase():
+def load_database():
     global path, photo, photo2, oriX, oriY, window, canvas, name_window, name_listbox, load_button
 
     path = os.path.expanduser('~/imgDB').replace('\\', '/')
@@ -253,7 +356,7 @@ def loadDatabase():
             name_listbox.insert(END, row[0])
         name_listbox.pack()
 
-        load_button = Button(name_window, text="로드", command=loadImage)
+        load_button = Button(name_window, text="로드", command=load_image)
         load_button.pack()
 
         name_window.mainloop()
@@ -261,7 +364,7 @@ def loadDatabase():
         messagebox.showinfo("로드 실패", "로드할 이미지가 없습니다.")
 
 
-def loadImage():
+def load_image():
     global name_window, name_listbox, load_button, path, photo, photo2, oriX, oriY, window, canvas
 
     selected_name = name_listbox.get(ANCHOR)
@@ -301,52 +404,65 @@ window.geometry("600x300")
 window.title("미니 포토샵")
 window.minsize(600, 500)
 
-mainMenu = Menu(window)
-window.config(menu=mainMenu)
+main_menu = Menu(window)
+window.config(menu=main_menu)
 
-fileMenu = Menu(mainMenu)
-mainMenu.add_cascade(label="파일", menu=fileMenu)
-fileMenu.add_command(label="파일 열기", command=func_open)
-fileMenu.add_command(label="파일 저장", command=func_save)
-fileMenu.add_separator()
-fileMenu.add_command(label="프로그램 종료", command=func_exit)
+file_menu = Menu(main_menu)
+main_menu.add_cascade(label="파일", menu=file_menu)
+file_menu.add_command(label="파일 열기", command=func_open)
+file_menu.add_command(label="파일 저장", command=func_save)
+file_menu.add_separator()
+file_menu.add_command(label="프로그램 종료", command=func_exit)
+
+imageFrame2 = Frame(window, padx=10, pady=10)
+imageFrame2.pack(side=RIGHT)
 
 imageFrame = Frame(window, padx=10, pady=10)
 imageFrame.pack(side=RIGHT)
 
-btnZoomIn = Button(imageFrame, text="확대", command=func_zoomin, width=8, height=1)
-btnZoomOut = Button(imageFrame, text="축소", command=func_zoomout, width=8, height=1)
-btnMirror1 = Button(imageFrame, text="상하 반전", command=func_mirror1, width=8, height=1)
-btnMirror2 = Button(imageFrame, text="좌우 반전", command=func_mirror2, width=8, height=1)
-btnRotate = Button(imageFrame, text="회전", command=func_rotate, width=8, height=1)
-btnBright = Button(imageFrame, text="밝게", command=func_bright, width=8, height=1)
-btnDart = Button(imageFrame, text="어둡게", command=func_dart, width=8, height=1)
-btnBlur = Button(imageFrame, text="블러", command=func_blur, width=8, height=1)
-btnEmbo = Button(imageFrame, text="엠보싱", command=func_embo, width=8, height=1)
-btnBw = Button(imageFrame, text="흑백", command=func_bw, width=8, height=1)
-btnRollback = Button(imageFrame, text="복원", command=func_rollback, width=8, height=1)
+btn_zoomIn = Button(imageFrame, text="확대", command=func_zoomin, width=8, height=1)
+btn_zoomOut = Button(imageFrame, text="축소", command=func_zoomout, width=8, height=1)
+btn_mirror1 = Button(imageFrame, text="상하 반전", command=func_mirror1, width=8, height=1)
+btn_mirror2 = Button(imageFrame, text="좌우 반전", command=func_mirror2, width=8, height=1)
+btn_rotate = Button(imageFrame, text="회전", command=func_rotate, width=8, height=1)
+btn_bright = Button(imageFrame, text="밝게", command=func_bright, width=8, height=1)
+btn_dart = Button(imageFrame, text="어둡게", command=func_dart, width=8, height=1)
+btn_blur = Button(imageFrame, text="블러", command=func_blur, width=8, height=1)
+btn_embo = Button(imageFrame, text="엠보싱", command=func_embo, width=8, height=1)
 
-btnZoomIn.pack(padx=5, pady=5)
-btnZoomOut.pack(padx=5, pady=5)
-btnMirror1.pack(padx=5, pady=5)
-btnMirror2.pack(padx=5, pady=5)
-btnRotate.pack(padx=5, pady=5)
-btnBright.pack(padx=5, pady=5)
-btnDart.pack(padx=5, pady=5)
-btnBlur.pack(padx=5, pady=5)
-btnEmbo.pack(padx=5, pady=5)
-btnBw.pack(padx=5, pady=5)
-btnRollback.pack(padx=5, pady=5)
+btn_zoomIn.pack(padx=5, pady=5)
+btn_zoomOut.pack(padx=5, pady=5)
+btn_mirror1.pack(padx=5, pady=5)
+btn_mirror2.pack(padx=5, pady=5)
+btn_rotate.pack(padx=5, pady=5)
+btn_bright.pack(padx=5, pady=5)
+btn_dart.pack(padx=5, pady=5)
+btn_blur.pack(padx=5, pady=5)
+btn_embo.pack(padx=5, pady=5)
 
 
-edtFrame = Frame(window, padx=10, pady=10)
-edtFrame.pack(side=BOTTOM)
+btn_bw = Button(imageFrame2, text="흑백", command=func_bw, width=8, height=1)
+btn_edge = Button(imageFrame2, text="선 선명", command=func_edge, width=8, height=1)
+btn_contour = Button(imageFrame2, text="윤곽", command=func_contour, width=8, height=1)
+btn_smooth = Button(imageFrame2, text="부드럽게", command=func_smooth, width=8, height=1)
+btn_rollback = Button(imageFrame2, text="복원", command=func_rollback, width=8, height=1)
 
-btnInsert = Button(edtFrame, text="이미지 저장", command=insert_image_to_db)
-btnLoad = Button(edtFrame, text="이미지 로드", command=loadDatabase)
+btn_bw.pack(padx=5, pady=5)
+btn_edge.pack(padx=5, pady=5)
+btn_contour.pack(padx=5, pady=5)
+btn_smooth.pack(padx=5, pady=5)
+btn_rollback.pack(padx=5, pady=5)
 
-btnInsert.pack(side=LEFT, padx=5, pady=5)
-btnLoad.pack(side=LEFT, padx=5, pady=5)
+
+
+edt_frame = Frame(window, padx=10, pady=10)
+edt_frame.pack(side=BOTTOM)
+
+btn_insert = Button(edt_frame, text="이미지 저장", command=insert_image_to_db)
+btn_load = Button(edt_frame, text="이미지 로드", command=load_database)
+
+btn_insert.pack(side=LEFT, padx=5, pady=5)
+btn_load.pack(side=LEFT, padx=5, pady=5)
 
 
 window.mainloop()
