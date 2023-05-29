@@ -8,7 +8,7 @@ from tkinter.simpledialog import *
 from PIL import Image, ImageFilter, ImageEnhance, ImageOps
 
 
-def displayImage(img, width, height):
+def display_image(img, width, height):
     global window, canvas, paper, photo, photo2, oriX, oriY
 
     window.geometry(str(width) + "x" + str(height))
@@ -18,31 +18,31 @@ def displayImage(img, width, height):
     canvas = Canvas(window, width=width, height=height)
     paper = PhotoImage(width=width, height=height)
     canvas.create_image((width / 2, height / 2), image=paper, state="normal")
-    rgbString = ""
-    rgbImage = img.convert('RGB')
+    rgb_string = ""
+    rgb_image = img.convert('RGB')
     for i in range(0, height):
         tmpString = ""
         for k in range(0, width):
-            r, g, b = rgbImage.getpixel((k, i))
+            r, g, b = rgb_image.getpixel((k, i))
             tmpString += "#%02x%02x%02x " % (r, g, b)   # x 뒤에 한 칸 공백
-        rgbString += "{" + tmpString + "} "             # } 뒤에 한 칸 공백
-    paper.put(rgbString)
+        rgb_string += "{" + tmpString + "} "            # } 뒤에 한 칸 공백
+    paper.put(rgb_string)
     canvas.pack(padx=20, pady=(20, 10))
 
 
 def func_open():
     global window, canvas, paper, photo, photo2, oriX, oriY
-    readFp = askopenfilename(parent=window, filetypes=(
+    read_fp = askopenfilename(parent=window, filetypes=(
         ("jpg 파일", "*.jpg"), ("png 파일", "*.png"), ("gif 파일", "*.gif"),
         ("jpeg 파일", "*.jpeg"), ("bmp 파일", "*.bmp"), ("tif 파일", "*.tif"), ("모든 파일", "*.*")))
-    photo = Image.open(readFp).convert('RGB')
+    photo = Image.open(read_fp).convert('RGB')
     oriX = photo.width
     oriY = photo.height
 
     photo2 = photo.copy()
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_save():
@@ -72,7 +72,7 @@ def func_zoomin():
         photo2 = photo2.resize((int(oriX * value), int(oriY * value)))
         newX = photo2.width
         newY = photo2.height
-        displayImage(photo2, newX, newY)
+        display_image(photo2, newX, newY)
         scale_window.destroy()
 
     scale_window = Tk()
@@ -102,7 +102,7 @@ def func_zoomout():
         photo2 = photo2.resize((int(oriX / value), int(oriY / value)))
         newX = photo2.width
         newY = photo2.height
-        displayImage(photo2, newX, newY)
+        display_image(photo2, newX, newY)
         scale_window.destroy()
 
     scale_window = Tk()
@@ -126,7 +126,7 @@ def func_mirror1():
     photo2 = photo2.transpose(Image.FLIP_TOP_BOTTOM)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_mirror2():
@@ -134,7 +134,7 @@ def func_mirror2():
     photo2 = photo2.transpose(Image.FLIP_LEFT_RIGHT)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_rotate():
@@ -148,7 +148,7 @@ def func_rotate():
         photo2 = photo2.rotate(value, expand=True)
         newX = photo2.width
         newY = photo2.height
-        displayImage(photo2, newX, newY)
+        display_image(photo2, newX, newY)
         scale_window.destroy()
 
     scale_window = Tk()
@@ -178,7 +178,7 @@ def func_bright():
         photo2 = ImageEnhance.Brightness(photo2).enhance(value)
         newX = photo2.width
         newY = photo2.height
-        displayImage(photo2, newX, newY)
+        display_image(photo2, newX, newY)
         scale_window.destroy()
 
     scale_window = Tk()
@@ -208,7 +208,7 @@ def func_dart():
         photo2 = ImageEnhance.Brightness(photo2).enhance(1/value)
         newX = photo2.width
         newY = photo2.height
-        displayImage(photo2, newX, newY)
+        display_image(photo2, newX, newY)
         scale_window.destroy()
 
     scale_window = Tk()
@@ -232,7 +232,7 @@ def func_blur():
     photo2 = photo2.filter(ImageFilter.BLUR)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_embo():
@@ -240,7 +240,7 @@ def func_embo():
     photo2 = photo2.filter(ImageFilter.EMBOSS)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_bw():
@@ -248,7 +248,7 @@ def func_bw():
     photo2 = ImageOps.grayscale(photo2)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_rollback():
@@ -256,7 +256,7 @@ def func_rollback():
     photo2 = photo.copy()
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_edge():
@@ -264,7 +264,7 @@ def func_edge():
     photo2 = photo2.filter(ImageFilter.EDGE_ENHANCE)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_contour():
@@ -272,7 +272,7 @@ def func_contour():
     photo2 = photo2.filter(ImageFilter.CONTOUR)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_smooth():
@@ -280,7 +280,7 @@ def func_smooth():
     photo2 = photo2.filter(ImageFilter.SMOOTH)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_detail():
@@ -288,7 +288,7 @@ def func_detail():
     photo2 = photo2.filter(ImageFilter.DETAIL)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def func_denoise():
@@ -296,7 +296,7 @@ def func_denoise():
     photo2 = photo2.filter(ImageFilter.SHARPEN)
     newX = photo2.width
     newY = photo2.height
-    displayImage(photo2, newX, newY)
+    display_image(photo2, newX, newY)
 
 
 def insert_database(name):
@@ -309,7 +309,7 @@ def insert_database(name):
     cur.execute(
         "CREATE TABLE IF NOT EXISTS imageDB (id INTEGER PRIMARY KEY, name TEXT, extension TEXT, image BLOB)")
 
-    # 이미지 이름 중복 체크
+    # 이름 중복 체크
     cur.execute("SELECT name FROM imageDB WHERE name=?", (name,))
     existing_name = cur.fetchone()
 
@@ -431,7 +431,7 @@ def load_image():
         photo2 = photo.copy()
         newX = photo2.width
         newY = photo2.height
-        displayImage(photo2, newX, newY)
+        display_image(photo2, newX, newY)
         name_window.destroy()
     else:
         messagebox.showinfo("로드 실패", "로드할 이미지가 없습니다.")
@@ -451,6 +451,7 @@ def delete_DB():
     con.close()
 
     messagebox.showinfo("삭제 완료", "데이터 삭제가 완료되었습니다.")
+
     name_window.destroy()
     load_database()
 
